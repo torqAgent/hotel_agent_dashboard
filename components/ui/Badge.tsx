@@ -6,6 +6,8 @@ const map: Record<CallStatus, string> = {
   escalated: 'bg-red-950 text-red-400',
   missed: 'bg-yellow-950 text-yellow-400',
   active: 'bg-blue-950 text-blue-400',
+  completed: 'bg-green-950 text-green-400',
+  ongoing: 'bg-purple-950 text-purple-400',
 }
 
 export function Badge({ status }: { status: CallStatus }) {

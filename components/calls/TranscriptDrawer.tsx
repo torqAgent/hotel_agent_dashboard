@@ -14,7 +14,7 @@ export function TranscriptDrawer({ callId, onClose }: { callId: string | null; o
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-sm font-medium text-white">{call?.guestName ?? 'Call transcript'}</h2>
-            {call && <div className="text-xs text-gray-500 mt-0.5">{fmtTime(call.startedAt)} · {dur(call.durationSec)}</div>}
+            {call && <div className="text-xs text-gray-500 mt-0.5">{fmtTime(call.startedAt)} · {dur(call.durationSec ?? null)}</div>}
           </div>
           <div className="flex items-center gap-2">
             {call && <Badge status={call.status} />}

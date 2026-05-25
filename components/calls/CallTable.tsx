@@ -55,7 +55,7 @@ export function CallTable({ calls }: { calls: Call[] }) {
                 <td className="px-4 py-3 text-white">{c.guestName ?? '—'}</td>
                 <td className="px-4 py-3 text-gray-400">{c.guestPhone ?? '—'}</td>
                 <td className="px-4 py-3 text-gray-400 capitalize">{c.intent ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-400">{dur(c.durationSec)}</td>
+                <td className="px-4 py-3 text-gray-400">{dur(c.durationSec ?? null)}</td>
                 <td className="px-4 py-3"><Badge status={c.status} /></td>
                 <td className="px-4 py-3 text-xs text-gold-dim hover:underline">Transcript</td>
               </tr>

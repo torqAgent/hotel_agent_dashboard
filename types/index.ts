@@ -28,3 +28,25 @@ export interface Metrics {
   bookingsThisWeek: number[]
   monthBookings: number
 }
+
+export type CallStatus =
+  | 'resolved'
+  | 'escalated'
+  | 'missed'
+  | 'completed'
+  | 'ongoing'
+  | 'active'
+export interface Call {
+  id: string
+  caller: string
+  status: CallStatus
+  duration: number
+  startedAt: string
+
+  guestName?: string | null
+  guestPhone?: string | null
+  intent?: string | null
+  durationSec?: number | null
+  transcript?: string | null
+  livekitRoomId?: string | null
+}
