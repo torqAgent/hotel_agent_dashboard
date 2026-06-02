@@ -79,7 +79,7 @@ html[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg-tertia
 html[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border-light); }
 html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: var(--gold-primary); }
 
-/* Light mode text fixes for all interactive elements - PERFECT styling */
+/* Light mode text fixes for all interactive elements */
 html[data-theme="light"] input,
 html[data-theme="light"] select,
 html[data-theme="light"] textarea,
@@ -161,17 +161,16 @@ html[data-theme="light"] .text-gray-400 {
   color: var(--text-secondary) !important;
 }
 
-html[data-theme="light"] .text-gray-500 {
-  color: var(--text-tertiary) !important;
-}
-
+html[data-theme="light"] .text-gray-500,
 html[data-theme="light"] .text-gray-600 {
   color: var(--text-tertiary) !important;
 }
 
-/* Light mode Tailwind class overrides for perfect compatibility */
+/* Light mode Tailwind class overrides */
+html[data-theme="light"] .bg-dark-card,
 html[data-theme="light"] .bg-dark-card {
   background-color: var(--bg-secondary) !important;
+  border-color: var(--border-light) !important;
 }
 
 html[data-theme="light"] .bg-dark-surface {
@@ -186,10 +185,7 @@ html[data-theme="light"] .bg-dark {
   background-color: var(--bg-primary) !important;
 }
 
-html[data-theme="light"] .border-dark-card {
-  border-color: var(--border-light) !important;
-}
-
+html[data-theme="light"] .border-dark-card,
 html[data-theme="light"] .border-dark-border {
   border-color: var(--border-light) !important;
 }
@@ -206,12 +202,12 @@ html[data-theme="light"] .bg-gold-bg {
   background-color: var(--gold-bg) !important;
 }
 
-/* Light mode specific button and form overrides */
+/* Utility overrides using attribute selectors to avoid escaping colons */
 html[data-theme="light"] .bg-green-600 {
   background-color: #16a34a !important;
 }
 
-html[data-theme="light"] .hover\\:bg-green-700:hover {
+html[data-theme="light"] [class*="hover:bg-green-700"]:hover {
   background-color: #15803d !important;
 }
 
@@ -219,11 +215,11 @@ html[data-theme="light"] .bg-red-600 {
   background-color: #dc2626 !important;
 }
 
-html[data-theme="light"] .hover\\:bg-red-700:hover {
+html[data-theme="light"] [class*="hover:bg-red-700"]:hover {
   background-color: #b91c1c !important;
 }
 
-html[data-theme="light"] .disabled\\:bg-green-800:disabled {
+html[data-theme="light"] [class*="disabled:bg-green-800"]:disabled {
   background-color: #166534 !important;
 }
 
@@ -239,19 +235,6 @@ html[data-theme="light"] .text-blue-400 {
   color: #60a5fa !important;
 }
 
-html[data-theme="light"] .bg-dark-card {
-  border-color: var(--border-light) !important;
-}
-
-html[data-theme="light"] .bg-dark-surface {
-  background-color: var(--bg-tertiary) !important;
-}
-
-html[data-theme="light"] .bg-dark-card {
-  background-color: var(--bg-secondary) !important;
-}
-
 html[data-theme="light"] .border-dark-border {
   border-color: var(--border-color) !important;
 }
-

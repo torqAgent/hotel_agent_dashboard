@@ -3,7 +3,6 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { booking, rooms } from '@/server/db/schema'
 import { eq, and, lte, gte, or } from 'drizzle-orm'
-import { getSettings } from '@/server/db/queries'
 
 const db = drizzle(neon(process.env.DB_URL!))
 
@@ -48,9 +47,8 @@ export async function POST(req: Request) {
     }
 
     // Fetch settings from database
-    const settings = await getSettings()
-    const deluxPrice = parseInt(settings.deluxPrice) || 5000
-    const standardPrice = parseInt(settings.standardPrice) || 2500
+    const deluxPrice =  5000
+    const standardPrice = 2500
 
     const room = await db
       .select()
@@ -137,34 +135,34 @@ export async function DELETE(req: Request) {
     }
 
     const today = new Date().toISOString().split('T')[0]
-
-    // Mark booking as checked_out
     await db
-      .update(booking)
-      .set({
-        status: 'checked_out',
-        actualCheckout: today,
-      })
-      .where(eq(booking.bookingId, bookingId))
+  .update(booking)
+  .set({
+    status: 'checked_out', // Keep only the status change
+  })
+  .where(eq(booking.bookingId, bookingId));
 
-    // Check if there are other active bookings for this room
-    const activeBookingsForRoom = await db
-      .select()
-      .from(booking)
-      .where(
-        and(
-          eq(booking.roomNo, bookingRecord.roomNo!),
-          eq(booking.status, 'active')
-        )
-      )
+// 2. Room availability logic remains the same to free the room
+const activeBookingsForRoom = await db
+  .select()
+  .from(booking)
+  .where(
+    and(
+      eq(booking.roomNo, bookingRecord.roomNo!),
+      eq(booking.status, 'active')
+    )
+  );
 
+if (activeBookingsForRoom.length === 0) {
+  await db
+    .update(rooms)
+    .set({ availability: true })
+    .where(eq(rooms.roomNo, bookingRecord.roomNo!));
+}
+    // Mark booking as checked_out
+    
     // If no other active bookings, mark room as available
-    if (activeBookingsForRoom.length === 0) {
-      await db
-        .update(rooms)
-        .set({ availability: true })
-        .where(eq(rooms.roomNo, bookingRecord.roomNo!))
-    }
+    
 
     return NextResponse.json({ success: true, booking: bookingRecord })
   } catch (error) {

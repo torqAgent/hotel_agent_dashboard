@@ -18,7 +18,7 @@ export function CheckoutButton({ bookingId, guestName, roomNo }: Props) {
   const handleCheckout = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/checkout/${bookingId}`, { method: 'PATCH' })
+      const res = await fetch(`/api/bookings/${bookingId}`, { method: 'PATCH' })
       if (res.ok) {
         setDone(true)
         setShowModal(false)

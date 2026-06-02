@@ -21,6 +21,7 @@ const FALLBACK_METRICS: Metrics = {
   todayBookings: 0,
   availableRooms: 0,
   totalRooms: 0,
+  occupiedRooms: 0,
   revenueMtd: 0,
   revenueAll: 0,
   bookingsThisWeek: [0, 0, 0, 0, 0, 0, 0],
@@ -34,7 +35,7 @@ async function DashboardContent() {
   let error: string | null = null
 
   try {
-    ;[metrics, bookings, roomList] = await Promise.all([
+    [metrics, bookings, roomList] = await Promise.all([
       getMetrics(),
       getBookings(),
       getRooms(),

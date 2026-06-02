@@ -1,35 +1,16 @@
-import { NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
-import { drizzle } from 'drizzle-orm/neon-http'
-import { rooms, booking } from '@/server/db/schema'
+// app/api/rooms/route.ts
+import { NextResponse } from 'next/server';
+import { getRooms } from '@/server/db/queries';
 
-const db = drizzle(neon(process.env.DB_URL!))
-
-function isActive(checkIn: string, checkOut: string) {
-  const today = new Date().toISOString().split('T')[0]
-  return checkIn <= today && checkOut >= today
-}
+// FORCE NEXT.JS TO BYPASS THE CACHE AND RUN THIS ON EVERY REFRESH
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const allRooms = await db.select().from(rooms)
-  const allBookings = await db.select().from(booking)
-
-  const result = allRooms.map(room => {
-    const active = allBookings.find(
-      b =>
-        b.roomNo === room.roomNo &&
-        b.checkIn &&
-        b.checkOut &&
-        isActive(b.checkIn, b.checkOut)
-    )
-
-    return {
-      ...room,
-      availability: !active,
-      bookedBy: active?.name || null,
-      bookedPhone: active?.no || null,
-    }
-  })
-
-  return NextResponse.json(result)
+  try {
+    const data = await getRooms();
+    return NextResponse.json(data); 
+  } catch (error) {
+    console.error("API Rooms Error:", error);
+    return NextResponse.json([], { status: 500 }); 
+  }
 }

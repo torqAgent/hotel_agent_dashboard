@@ -4,37 +4,37 @@ import { drizzle } from 'drizzle-orm/neon-http'
 import { booking, rooms } from '@/server/db/schema'
 import { eq } from 'drizzle-orm'
 
-export async function DELETE(
+export async function PATCH(
   _: NextRequest,
   { params }: { params: Promise<{ bookingId: string }> }
 ) {
   const { bookingId } = await params
-
   const db = drizzle(neon(process.env.DB_URL!))
 
-  const existing = await db
-    .select()
-    .from(booking)
-    .where(eq(booking.bookingId, Number(bookingId)))
-    .then(r => r[0])
+  try {
+    // 1. Find the booking
+    const existing = await db
+      .select()
+      .from(booking)
+      .where(eq(booking.bookingId, Number(bookingId)))
+      .then(r => r[0])
 
-  if (!existing) {
-    return NextResponse.json(
-      { error: 'Booking not found' },
-      { status: 404 }
-    )
+    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // 2. Update Room Availability
+    if (existing.roomNo) {
+      await db.update(rooms)
+        .set({ availability: true })
+        .where(eq(rooms.roomNo, existing.roomNo))
+    }
+
+    // 3. Update Booking Status to 'checked_out'
+    await db.update(booking)
+      .set({ status: 'checked_out' })
+      .where(eq(booking.bookingId, Number(bookingId)))
+
+    return NextResponse.json({ success: true })
+  } catch (e) {
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
   }
-
-  if (existing.roomNo !== null && existing.roomNo !== undefined) {
-    await db
-      .update(rooms)
-      .set({ availability: true })
-      .where(eq(rooms.roomNo, existing.roomNo))
-  }
-
-  await db
-    .delete(booking)
-    .where(eq(booking.bookingId, Number(bookingId)))
-
-  return NextResponse.json({ success: true })
 }

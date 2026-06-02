@@ -15,19 +15,22 @@ export function CheckoutButton({ bookingId, guestName, roomNo, onSuccess }: Prop
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
 
-  const handleCheckout = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/checkout/${bookingId}`, { method: 'PATCH' })
-      if (res.ok) {
-        setDone(true)
-        setShowModal(false)
-        onSuccess()
-      }
-    } finally {
-      setLoading(false)
+  // components/bookings/CheckoutButton.tsx
+
+const handleCheckout = async () => {
+  setLoading(true)
+  try {
+    // Change this line to match your actual route folder structure
+    const res = await fetch(`/api/bookings/${bookingId}`, { method: 'PATCH' }) 
+    if (res.ok) {
+      setDone(true)
+      setShowModal(false)
+      onSuccess() // This triggers fetchBookings in page.tsx
     }
+  } finally {
+    setLoading(false)
   }
+}
 
   if (done) {
     return (
