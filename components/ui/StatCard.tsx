@@ -10,7 +10,7 @@ interface Props {
 
 export function StatCard({ label, value, delta, deltaUp, gold }: Props) {
   return (
-    <div className="bg-dark-surface rounded-lg p-4">
+    <div className="bg-dark-surface rounded-lg p-4 transition-colors">
       <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5">{label}</div>
       <div className={cn('text-2xl font-medium leading-none', gold ? 'text-gold-dim' : 'text-white')}>
         {value}

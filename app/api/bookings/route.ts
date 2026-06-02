@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { booking, rooms } from '@/server/db/schema'
 import { eq, and, lte, gte, or } from 'drizzle-orm'
-import { settingsCache } from '@/app/api/settings/route'
+import { getSettings } from '@/server/db/queries'
 
 const db = drizzle(neon(process.env.DB_URL!))
 
@@ -17,9 +17,7 @@ function nights(checkIn: string, checkOut: string) {
   )
 }
 
-function price(roomType: string, nightsCount: number) {
-  const deluxPrice = parseInt(settingsCache.deluxPrice) || 5000
-  const standardPrice = parseInt(settingsCache.standardPrice) || 2500
+function price(roomType: string, nightsCount: number, deluxPrice: number, standardPrice: number) {
   const rate = roomType === 'Delux' ? deluxPrice : standardPrice
   return rate * nightsCount
 }
@@ -38,70 +36,142 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json()
+  try {
+    const body = await req.json()
 
-  const roomNo = Number(body.roomNo)
-  const checkIn = body.checkIn
-  const checkOut = body.checkOut
+    const roomNo = Number(body.roomNo)
+    const checkIn = body.checkIn
+    const checkOut = body.checkOut
 
-  if (!roomNo || !checkIn || !checkOut) {
-    return NextResponse.json({ error: 'Missing data' }, { status: 400 })
-  }
+    if (!roomNo || !checkIn || !checkOut) {
+      return NextResponse.json({ error: 'Missing data' }, { status: 400 })
+    }
 
-  const room = await db
-    .select()
-    .from(rooms)
-    .where(eq(rooms.roomNo, roomNo))
-    .then(r => r[0])
+    // Fetch settings from database
+    const settings = await getSettings()
+    const deluxPrice = parseInt(settings.deluxPrice) || 5000
+    const standardPrice = parseInt(settings.standardPrice) || 2500
 
-  if (!room) {
-    return NextResponse.json({ error: 'Room not found' }, { status: 404 })
-  }
+    const room = await db
+      .select()
+      .from(rooms)
+      .where(eq(rooms.roomNo, roomNo))
+      .then(r => r[0])
 
-  // 🔥 GET all bookings for this room
-  const existingBookings = await db
-    .select()
-    .from(booking)
-    .where(eq(booking.roomNo, roomNo))
+    if (!room) {
+      return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+    }
 
-  // 🔥 CHECK DATE CONFLICT
-  const conflict = existingBookings.some(b =>
-    overlap(b.checkIn!, b.checkOut!, checkIn, checkOut)
-  )
+    // 🔥 GET all bookings for this room
+    const existingBookings = await db
+      .select()
+      .from(booking)
+      .where(eq(booking.roomNo, roomNo))
 
-  if (conflict) {
+    // 🔥 CHECK DATE CONFLICT
+    const conflict = existingBookings.some(b =>
+      overlap(b.checkIn!, b.checkOut!, checkIn, checkOut)
+    )
+
+    if (conflict) {
+      return NextResponse.json(
+        { error: 'Room already booked for selected dates' },
+        { status: 409 }
+      )
+    }
+
+    // Validate dates
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      return NextResponse.json(
+        { error: 'Check-out date must be after check-in date' },
+        { status: 400 }
+      )
+    }
+
+    const stay = nights(checkIn, checkOut)
+    const totalPrice = price(room.roomType ?? 'Standard', stay, deluxPrice, standardPrice)
+
+    await db.insert(booking).values({
+      name: body.name,
+      no: body.no,
+      roomNo,
+      checkIn,
+      checkOut,
+      totalPrice,
+    })
+
+    // Mark room as unavailable after booking
+    await db
+      .update(rooms)
+      .set({ availability: false })
+      .where(eq(rooms.roomNo, roomNo))
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('POST /api/bookings error:', error)
     return NextResponse.json(
-      { error: 'Room already booked for selected dates' },
-      { status: 409 }
+      { error: 'Failed to create booking' },
+      { status: 500 }
     )
   }
-
-  // Validate dates
-  if (new Date(checkOut) <= new Date(checkIn)) {
-    return NextResponse.json(
-      { error: 'Check-out date must be after check-in date' },
-      { status: 400 }
-    )
-  }
-
-  const stay = nights(checkIn, checkOut)
-  const totalPrice = price(room.roomType ?? 'Standard', stay)
-
-  await db.insert(booking).values({
-    name: body.name,
-    no: body.no,
-    roomNo,
-    checkIn,
-    checkOut,
-    totalPrice,
-  })
-
-  // Mark room as unavailable after booking
-  await db
-    .update(rooms)
-    .set({ availability: false })
-    .where(eq(rooms.roomNo, roomNo))
-
-  return NextResponse.json({ success: true })
 }
 
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json()
+    const bookingId = Number(body.bookingId)
+
+    if (!bookingId) {
+      return NextResponse.json({ error: 'Missing booking ID' }, { status: 400 })
+    }
+
+    // Get booking to find room number
+    const bookingRecord = await db
+      .select()
+      .from(booking)
+      .where(eq(booking.bookingId, bookingId))
+      .then(r => r[0])
+
+    if (!bookingRecord) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+
+    // Mark booking as checked_out
+    await db
+      .update(booking)
+      .set({
+        status: 'checked_out',
+        actualCheckout: today,
+      })
+      .where(eq(booking.bookingId, bookingId))
+
+    // Check if there are other active bookings for this room
+    const activeBookingsForRoom = await db
+      .select()
+      .from(booking)
+      .where(
+        and(
+          eq(booking.roomNo, bookingRecord.roomNo!),
+          eq(booking.status, 'active')
+        )
+      )
+
+    // If no other active bookings, mark room as available
+    if (activeBookingsForRoom.length === 0) {
+      await db
+        .update(rooms)
+        .set({ availability: true })
+        .where(eq(rooms.roomNo, bookingRecord.roomNo!))
+    }
+
+    return NextResponse.json({ success: true, booking: bookingRecord })
+  } catch (error) {
+    console.error('DELETE /api/bookings error:', error)
+    return NextResponse.json(
+      { error: 'Failed to checkout booking' },
+      { status: 500 }
+    )
+  }
+}

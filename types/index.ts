@@ -22,6 +22,7 @@ export interface RoomWithBookings extends Room {
 export interface Metrics {
   totalBookings: number
   todayBookings: number
+  occupiedRooms: number
   availableRooms: number
   totalRooms: number
   revenueMtd: number

@@ -1,43 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
-import { drizzle } from 'drizzle-orm/neon-http'
-
-const db = drizzle(neon(process.env.DB_URL!))
-
-// In-memory cache for settings (in production, store in database)
-export const settingsCache: any = {
-  hotelName: 'The Grand Heritage, Mysuru',
-  agentName: 'Aria',
-  greeting: 'Thank you for calling The Grand Heritage. How may I assist you?',
-  tone: 'Formal',
-  sipTrunk: '+91 821 000 0000',
-  livekitRoom: 'hotel-reception',
-  managerSip: 'sip:manager@yourdomain.com',
-  pmsProvider: 'Google Calendar',
-  deluxPrice: '5000',
-  standardPrice: '2500',
-}
+import { getSettings, updateSettings } from '@/server/db/queries'
 
 export async function GET() {
-  return NextResponse.json(settingsCache)
+  try {
+    const settings = await getSettings()
+    return NextResponse.json(settings)
+  } catch (error) {
+    console.error('GET /api/settings error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch settings' },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     
-    // Update cache with new settings
-    Object.assign(settingsCache, body)
+    // Validate required fields
+    if (!body.hotelName || !body.agentName) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    const settings = await updateSettings(body)
     
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Settings saved successfully',
-      settings: settingsCache 
+      settings,
     })
   } catch (error) {
+    console.error('POST /api/settings error:', error)
     return NextResponse.json(
       { error: 'Failed to save settings' },
-      { status: 400 }
+      { status: 500 }
     )
   }
 }

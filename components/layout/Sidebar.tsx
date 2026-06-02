@@ -16,7 +16,11 @@ const nav = [
 export function Sidebar() {
   const path = usePathname()
   return (
-    <aside className="w-56 shrink-0 bg-dark-card border-r border-dark-border flex flex-col">
+    <aside
+      className="w-56 shrink-0 bg-dark-card border-r border-dark-border flex flex-col transition-colors"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="px-5 py-4 border-b border-dark-border flex items-center gap-3">
         <Image src="/logo.jpeg" alt="Torq Agents" width={36} height={36} className="rounded-lg" />
         <div>
@@ -26,12 +30,18 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 p-3 flex flex-col gap-0.5">
         {nav.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href}
+          <Link
+            key={href}
+            href={href}
+            aria-current={path === href ? 'page' : undefined}
             className={cn(
               'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
-              path === href ? 'bg-gold-bg text-gold-dim' : 'text-gray-400 hover:text-white hover:bg-dark-surface'
-            )}>
-            <Icon size={16} />
+              path === href
+                ? 'bg-gold-bg text-gold-dim'
+                : 'text-gray-400 hover:text-white hover:bg-dark-surface'
+            )}
+          >
+            <Icon size={16} aria-hidden="true" />
             {label}
           </Link>
         ))}

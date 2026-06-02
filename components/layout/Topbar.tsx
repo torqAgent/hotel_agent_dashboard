@@ -1,15 +1,17 @@
 'use client'
 import Image from 'next/image'
 import { useLiveKitStats } from '@/hooks/useLiveKitStats'
-import { Phone } from 'lucide-react'
+import { useTheme } from '@/app/providers'
+import { Phone, Moon, Sun } from 'lucide-react'
 
 export function Topbar({ title }: { title: string }) {
   const { stats, connected } = useLiveKitStats()
+  const { theme, toggleTheme } = useTheme()
 
   const activeCalls = stats?.activeCalls ?? 0
 
   return (
-    <header className="h-14 border-b border-dark-border flex items-center justify-between px-6 bg-dark-card">
+    <header className="h-14 border-b border-dark-border flex items-center justify-between px-6 bg-dark-card transition-colors">
       <div className="flex items-center gap-3">
         <Image src="/logo.jpeg" alt="Torq Agents" width={28} height={28} className="rounded-md opacity-80" />
         <h1 className="text-sm font-medium text-white">{title}</h1>
@@ -36,7 +38,17 @@ export function Topbar({ title }: { title: string }) {
           Neon DB
         </span>
 
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-dark-surface transition-colors text-gray-400 hover:text-white"
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
       </div>
     </header>
   )
 }
+
