@@ -1,13 +1,35 @@
 import { NextResponse } from 'next/server'
-import { getRooms } from '@/server/db/queries'
+import { neon } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-http'
+import { rooms, booking } from '@/server/db/schema'
 
-export const dynamic = 'force-dynamic'
+const db = drizzle(neon(process.env.DB_URL!))
+
+function isActive(checkIn: string, checkOut: string) {
+  const today = new Date().toISOString().split('T')[0]
+  return checkIn <= today && checkOut >= today
+}
 
 export async function GET() {
-  try {
-    const data = await getRooms()
-    return NextResponse.json(data)
-  } catch (e) {
-    return NextResponse.json({ error: 'DB error' }, { status: 500 })
-  }
+  const allRooms = await db.select().from(rooms)
+  const allBookings = await db.select().from(booking)
+
+  const result = allRooms.map(room => {
+    const active = allBookings.find(
+      b =>
+        b.roomNo === room.roomNo &&
+        b.checkIn &&
+        b.checkOut &&
+        isActive(b.checkIn, b.checkOut)
+    )
+
+    return {
+      ...room,
+      availability: !active,
+      bookedBy: active?.name || null,
+      bookedPhone: active?.no || null,
+    }
+  })
+
+  return NextResponse.json(result)
 }

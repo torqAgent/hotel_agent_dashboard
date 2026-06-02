@@ -20,7 +20,13 @@ export async function getMetrics() {
 
   const todayBookings = allBookings.filter(b => b.checkIn === today)
   const monthBookings = allBookings.filter(b => b.checkIn && b.checkIn >= monthStart)
-  const availableRooms = allRooms.filter(r => r.availability)
+  // Check for actually available rooms (no active bookings)
+  const availableRooms = allRooms.filter(r => {
+    const hasActiveBooking = allBookings.some(b => 
+      b.roomNo === r.roomNo && b.checkIn && b.checkOut
+    )
+    return !hasActiveBooking
+  })
   const totalRevenueMtd = monthBookings.reduce((a, b) => a + (b.totalPrice ?? 0), 0)
   const totalRevenueAll = allBookings.reduce((a, b) => a + (b.totalPrice ?? 0), 0)
 
@@ -50,7 +56,18 @@ export async function getBookings() {
 
 export async function getRooms() {
   const db = getDb()
-  return db.select().from(rooms)
+  const allRooms = await db.select().from(rooms)
+  const allBookings = await db.select().from(booking)
+  
+  // Sync availability flag with actual bookings
+  return allRooms.map(r => {
+    const hasActiveBooking = allBookings.some(b => b.roomNo === r.roomNo)
+    return {
+      ...r,
+      // Update availability based on actual bookings
+      availability: !hasActiveBooking
+    }
+  })
 }
 
 export async function getBookingById(id: number) {
@@ -64,8 +81,13 @@ export async function getRoomWithBookings() {
     db.select().from(rooms),
     db.select().from(booking),
   ])
-  return allRooms.map(r => ({
-    ...r,
-    bookings: allBookings.filter(b => b.roomNo === r.roomNo),
-  }))
+  return allRooms.map(r => {
+    const roomBookings = allBookings.filter(b => b.roomNo === r.roomNo)
+    return {
+      ...r,
+      bookings: roomBookings,
+      // bookedBy is for display purposes - guest name of current/latest booking if any
+      bookedBy: roomBookings.length > 0 ? roomBookings[0].name : null,
+    }
+  })
 }

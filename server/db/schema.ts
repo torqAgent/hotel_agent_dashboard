@@ -1,4 +1,11 @@
-import { pgTable, serial, varchar, integer, date, boolean } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  serial,
+  varchar,
+  integer,
+  date,
+  boolean,
+} from 'drizzle-orm/pg-core'
 
 export const booking = pgTable('booking', {
   bookingId: serial('booking_id').primaryKey(),
@@ -8,6 +15,7 @@ export const booking = pgTable('booking', {
   checkIn: date('check_in'),
   checkOut: date('check_out'),
   totalPrice: integer('total_price'),
+  status: varchar('status').default('active'),
 })
 
 export const rooms = pgTable('rooms', {

@@ -36,9 +36,9 @@ export default async function RoomsPage() {
                 <div className="text-xs text-gray-500 mt-0.5">{r.roomType ?? 'Unknown type'}</div>
               </div>
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                r.availability ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'
+                r.bookings && r.bookings.length > 0 ? 'bg-red-950 text-red-400' : 'bg-emerald-950 text-emerald-400'
               }`}>
-                {r.availability ? 'Available' : 'Occupied'}
+                {r.bookings && r.bookings.length > 0 ? 'Occupied' : 'Available'}
               </span>
             </div>
 

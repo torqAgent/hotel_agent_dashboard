@@ -1,3 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const path = require('path')
+
+const nextConfig = {
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
+}
 module.exports = nextConfig

@@ -16,6 +16,7 @@ export interface Room {
 
 export interface RoomWithBookings extends Room {
   bookings: Booking[]
+  bookedBy: string | null
 }
 
 export interface Metrics {

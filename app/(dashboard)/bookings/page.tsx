@@ -1,18 +1,35 @@
-import { getBookings } from '@/server/db/queries'
+'use client'
+
+import { useEffect, useState } from 'react'
 import { inr, fmtDate } from '@/lib/formatters'
 import type { Booking } from '@/types'
+import AddBookingForm from '@/components/AddBookingForm'
+import { CheckoutButton } from '@/components/bookings/CheckoutButton'
 
-export const dynamic = 'force-dynamic'
+export default function BookingsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [error, setError] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-export default async function BookingsPage() {
-  let bookings: Booking[] = []
-  let error = false
-  try {
-    bookings = await getBookings()
-  } catch (e) {
-    console.error(e)
-    error = true
+  const fetchBookings = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/bookings')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      setBookings(data)
+      setError(false)
+    } catch (e) {
+      console.error(e)
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    fetchBookings()
+  }, [])
 
   const total = bookings.reduce((a, b) => a + (b.totalPrice ?? 0), 0)
 
@@ -35,33 +52,61 @@ export default async function BookingsPage() {
         </div>
       )}
 
+      <AddBookingForm onSuccess={fetchBookings} />
+
       <div className="overflow-x-auto rounded-xl border border-dark-border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-dark-border text-xs text-gray-500 uppercase tracking-wider">
-              {['ID', 'Guest name', 'Phone', 'Room no', 'Check-in', 'Check-out', 'Total price'].map(h => (
+              {['ID', 'Guest name', 'Phone', 'Room no', 'Check-in', 'Check-out', 'Total price', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {bookings.map((b, i) => (
-              <tr key={b.bookingId}
-                className={`border-b border-dark-border hover:bg-dark-surface transition-colors ${i % 2 === 0 ? '' : 'bg-dark-card'}`}>
-                <td className="px-4 py-3 text-gray-500">#{b.bookingId}</td>
-                <td className="px-4 py-3 text-white font-medium">{b.name ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-400">{b.no ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-400">{b.roomNo ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-400">{b.checkIn ? fmtDate(b.checkIn) : '—'}</td>
-                <td className="px-4 py-3 text-gray-400">{b.checkOut ? fmtDate(b.checkOut) : '—'}</td>
-                <td className="px-4 py-3 text-gold-dim font-medium">{b.totalPrice ? inr(b.totalPrice) : '—'}</td>
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-500">Loading bookings...</td>
               </tr>
-            ))}
+            ) : bookings.length === 0 && !error ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-600">No bookings in database</td>
+              </tr>
+            ) : (
+              bookings.map((b, i) => (
+                <tr
+                  key={b.bookingId}
+                  className={`border-b border-dark-border hover:bg-dark-surface transition-colors ${
+                    i % 2 === 0 ? '' : 'bg-dark-card'
+                  }`}
+                >
+                  <td className="px-4 py-3 text-gray-500">#{b.bookingId}</td>
+                  <td className="px-4 py-3 text-white font-medium">{b.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-400">{b.no ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-400">{b.roomNo ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-400">
+                    {b.checkIn ? fmtDate(b.checkIn) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-gray-400">
+                    {b.checkOut ? fmtDate(b.checkOut) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-gold-dim font-medium">
+                    {b.totalPrice ? inr(b.totalPrice) : '—'}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <CheckoutButton 
+                      bookingId={b.bookingId} 
+                      guestName={b.name} 
+                      roomNo={b.roomNo}
+                      onSuccess={fetchBookings}
+                    />
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {bookings.length === 0 && !error && (
-          <div className="text-center py-12 text-gray-600 text-sm">No bookings in database</div>
-        )}
       </div>
     </div>
   )

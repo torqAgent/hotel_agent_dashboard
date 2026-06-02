@@ -31,22 +31,38 @@ async function fetchLiveKitStats() {
 
 export async function GET(req: NextRequest) {
   const encoder = new TextEncoder()
+  let isClosed = false
+  
   const stream = new ReadableStream({
     async start(ctrl) {
       const send = async () => {
+        if (isClosed) return
         try {
           const data = await fetchLiveKitStats()
           ctrl.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
         } catch (e: any) {
-          ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ error: e?.message })}\n\n`))
+          if (!isClosed) {
+            ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ error: e?.message })}\n\n`))
+          }
         }
       }
+      
       await send()
       const iv = setInterval(send, 5000)
-      req.signal.addEventListener('abort', () => { clearInterval(iv); ctrl.close() })
+      
+      req.signal.addEventListener('abort', () => {
+        isClosed = true
+        clearInterval(iv)
+        ctrl.close()
+      })
     }
   })
+  
   return new Response(stream, {
-    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
+    headers: { 
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    }
   })
 }
